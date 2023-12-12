@@ -1,0 +1,61 @@
+apiVersion: v1
+data:
+  handler.lua: |-
+    local BasePlugin = require "kong.plugins.base_plugin"
+    local json = require("cjson")
+    local DecodeHandler = BasePlugin:extend()
+    local ngx = ngx
+    local kong = kong
+    local decoded_url
+    DecodeHandler.PRIORITY = 800
+    DecodeHandler.VERSION = "0.1.0"
+    function DecodeHandler:access(conf)
+        local host = ngx.var.host
+        local args = ngx.req.get_uri_args()
+        kong.log(json.encode(args))
+    --    local request_method = ngx.var.request_method
+    --        local args = nil
+    --        if "GET" == request_method then
+    --             args = ngx.req.get_uri_args()
+    --        else
+    --             ngx.req.read_body()
+    --             args = ngx.req.get_post_args()
+    --        end
+        local replace,n,err  = tostring(args["vnnox"])
+        if replace and n == 0 then
+            return
+        end
+        if err then
+            kong.log("Error http-rewrite plugin, ngx.re.sub err: ",err, " ,host is: ", host, " ,uri is: ",
+                ngx.var.request_uri, " ,config is: ", json.encode(conf))
+            return
+        end
+        decoded_url = ngx.decode_base64(replace)
+        kong.log("Debug http-rewrite plugin, replace is: ========================",replace)
+        kong.log("Debug http-rewrite plugin, decoded_url is: =======================",decoded_url)
+        if conf.flag == "redirect" then
+            ngx.redirect(decoded_url,302)
+        elseif conf.flag == "permanent" then
+             kong.log("Debug http-rewrite plugin, ngx.var.upstream_uri:========================================== ",ngx.var.upstream_uri)
+             ngx.var.args = nil
+             ngx.var.upstream_uri = "/" .. decoded_url
+        end
+    --    DecodeHandler.super.access(self)
+    end
+    return DecodeHandler
+  schema.lua: |-
+    return {
+        no_consumer = true,
+        fields = {
+            regex = { type = "string" },
+            replacement = { type = "string" },
+            flag = {type = "string"},
+        },
+        self_check = function(schema, plugin_t, dao, is_update)
+            return true
+        end
+    }
+kind: ConfigMap
+metadata:
+  name: base64-decode
+  namespace: default

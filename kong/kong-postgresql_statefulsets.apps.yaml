@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    meta.helm.sh/release-name: kong
+    meta.helm.sh/release-namespace: default
+  generation: 1
+  labels:
+    app: postgresql
+    app.kubernetes.io/managed-by: Helm
+    chart: postgresql-8.6.8
+    heritage: Helm
+    release: kong
+  name: kong-postgresql
+  namespace: default
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: postgresql
+      release: kong
+      role: master
+  serviceName: kong-postgresql-headless
+  template:
+    metadata:
+      labels:
+        app: postgresql
+        chart: postgresql-8.6.8
+        heritage: Helm
+        release: kong
+        role: master
+      name: kong-postgresql
+    spec:
+      containers:
+      - env:
+        - name: BITNAMI_DEBUG
+          value: "false"
+        - name: POSTGRESQL_PORT_NUMBER
+          value: "5432"
+        - name: POSTGRESQL_VOLUME_DIR
+          value: /bitnami/postgresql
+        - name: PGDATA
+          value: /bitnami/postgresql/data
+        - name: POSTGRES_USER
+          value: kong
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: kong-postgresql
+        - name: POSTGRES_DB
+          value: kong
+        - name: POSTGRESQL_ENABLE_LDAP
+          value: "no"
+        image: registry.cn-hangzhou.aliyuncs.com/nova-base/postgres:v11.3
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U "kong" -d "kong" -h 127.0.0.1 -p 5432
+          failureThreshold: 6
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: kong-postgresql
+        ports:
+        - containerPort: 5432
+          name: tcp-postgresql
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - -e
+            - |
+              exec pg_isready -U "kong" -d "kong" -h 127.0.0.1 -p 5432
+          failureThreshold: 6
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        securityContext:
+          runAsUser: 0
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /bitnami/postgresql
+          name: data
+        - mountPath: /bitnami/postgresql/conf
+          name: postgresql-config
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 0
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: kong-postgresql-configuration
+        name: postgresql-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: kong-pg-data
+  updateStrategy:
+    type: RollingUpdate
+status:
+  availableReplicas: 1
+  collisionCount: 0
+  currentReplicas: 1
+  currentRevision: kong-postgresql-8449957694
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  updateRevision: kong-postgresql-8449957694
+  updatedReplicas: 1

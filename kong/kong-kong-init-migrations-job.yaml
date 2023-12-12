@@ -1,0 +1,228 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kong-kong-init-migrations
+  namespace: default
+spec:
+  backoffLimit: 6
+  completionMode: NonIndexed
+  completions: 1
+  parallelism: 1
+  suspend: false
+  template:
+    metadata:
+      annotations:
+        kuma.io/sidecar-injection: disabled
+        sidecar.istio.io/inject: "false"
+      name: kong-init-migrations
+    spec:
+      containers:
+      - command:
+        - /bin/sh
+        - -c
+        - kong migrations bootstrap
+        env:
+        - name: KONG_ADMIN_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_ADMIN_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_ADMIN_GUI_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_ADMIN_GUI_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_ADMIN_LISTEN
+          value: 0.0.0.0:8001
+        - name: KONG_CLUSTER_LISTEN
+          value: "off"
+        - name: KONG_DATABASE
+          value: postgres
+        - name: KONG_LUA_PACKAGE_PATH
+          value: /opt/?.lua;/opt/?/init.lua;;
+        - name: KONG_NGINX_HTTP_INCLUDE
+          value: /kong/servers.conf
+        - name: KONG_NGINX_WORKER_PROCESSES
+          value: "1"
+        - name: KONG_PG_HOST
+          value: kong-postgresql
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: kong-postgresql
+        - name: KONG_PG_PORT
+          value: "5432"
+        - name: KONG_PLUGINS
+          value: bundled,base64-decode,method-rewrite,header-filter
+        - name: KONG_PORTAL_API_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_PORTAL_API_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_PORT_MAPS
+          value: 80:8000, 443:8443
+        - name: KONG_PREFIX
+          value: /kong_prefix/
+        - name: KONG_PROXY_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_PROXY_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_PROXY_LISTEN
+          value: 0.0.0.0:8000, 0.0.0.0:8443 http2 ssl
+        - name: KONG_STATUS_LISTEN
+          value: 0.0.0.0:8100
+        - name: KONG_STREAM_LISTEN
+          value: "off"
+        - name: KONG_NGINX_DAEMON
+          value: "off"
+        image: kong:2.1
+        imagePullPolicy: IfNotPresent
+        name: kong-migrations
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /usr/local/share/lua/5.1/kong/plugins/method-rewrite/handler.lua
+          name: method-rewrite
+          subPath: handler.lua
+        - mountPath: /usr/local/share/lua/5.1/kong/plugins/method-rewrite/schema.lua
+          name: method-rewrite
+          subPath: schema.lua
+        - mountPath: /usr/local/share/lua/5.1/kong/plugins/base64-decode/handler.lua
+          name: base64-decode
+          subPath: handler.lua
+        - mountPath: /usr/local/share/lua/5.1/kong/plugins/base64-decode/schema.lua
+          name: base64-decode
+          subPath: schema.lua
+        - mountPath: /usr/local/share/lua/5.1/kong/plugins/header-filter/handler.lua
+          name: header-filter
+          subPath: handler.lua
+        - mountPath: /usr/local/share/lua/5.1/kong/plugins/header-filter/schema.lua
+          name: header-filter
+          subPath: schema.lua
+        - mountPath: /kong_prefix/
+          name: kong-kong-prefix-dir
+        - mountPath: /tmp
+          name: kong-kong-tmp
+        - mountPath: /kong
+          name: custom-nginx-template-volume
+        - mountPath: /etc/kong/kong.conf
+          name: kong-conf
+          subPath: kong.conf
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - bash
+        - /wait_postgres/wait.sh
+        env:
+        - name: KONG_ADMIN_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_ADMIN_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_ADMIN_GUI_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_ADMIN_GUI_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_ADMIN_LISTEN
+          value: 0.0.0.0:8001
+        - name: KONG_CLUSTER_LISTEN
+          value: "off"
+        - name: KONG_DATABASE
+          value: postgres
+        - name: KONG_LUA_PACKAGE_PATH
+          value: /opt/?.lua;/opt/?/init.lua;;
+        - name: KONG_NGINX_HTTP_INCLUDE
+          value: /kong/servers.conf
+        - name: KONG_NGINX_WORKER_PROCESSES
+          value: "1"
+        - name: KONG_PG_HOST
+          value: kong-postgresql
+        - name: KONG_PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: kong-postgresql
+        - name: KONG_PG_PORT
+          value: "5432"
+        - name: KONG_PLUGINS
+          value: bundled,base64-decode,method-rewrite,header-filter
+        - name: KONG_PORTAL_API_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_PORTAL_API_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_PORT_MAPS
+          value: 80:8000, 443:8443
+        - name: KONG_PREFIX
+          value: /kong_prefix/
+        - name: KONG_PROXY_ACCESS_LOG
+          value: /dev/stdout
+        - name: KONG_PROXY_ERROR_LOG
+          value: /dev/stderr
+        - name: KONG_PROXY_LISTEN
+          value: 0.0.0.0:8000, 0.0.0.0:8443 http2 ssl
+        - name: KONG_STATUS_LISTEN
+          value: 0.0.0.0:8100
+        - name: KONG_STREAM_LISTEN
+          value: "off"
+        - name: KONG_NGINX_DAEMON
+          value: "off"
+        image: bash:5
+        imagePullPolicy: IfNotPresent
+        name: wait-for-postgres
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /wait_postgres
+          name: kong-kong-bash-wait-for-postgres
+      restartPolicy: OnFailure
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 0
+        runAsUser: 0
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: kong.conf
+            path: kong.conf
+          name: kong.conf
+        name: kong-conf
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: handler.lua
+            path: handler.lua
+          - key: schema.lua
+            path: schema.lua
+          name: method-rewrite
+        name: method-rewrite
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: handler.lua
+            path: handler.lua
+          - key: schema.lua
+            path: schema.lua
+          name: header-filter
+        name: header-filter
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: handler.lua
+            path: handler.lua
+          - key: schema.lua
+            path: schema.lua
+          name: base64-decode
+        name: base64-decode
+      - emptyDir: {}
+        name: kong-kong-prefix-dir
+      - emptyDir: {}
+        name: kong-kong-tmp
+      - configMap:
+          defaultMode: 493
+          name: kong-kong-bash-wait-for-postgres
+        name: kong-kong-bash-wait-for-postgres
+      - configMap:
+          defaultMode: 420
+          name: kong-kong-default-custom-server-blocks
+        name: custom-nginx-template-volume

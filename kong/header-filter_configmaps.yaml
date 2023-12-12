@@ -1,0 +1,44 @@
+apiVersion: v1
+data:
+  handler.lua: "local strip = require(\"kong.tools.utils\").strip\nlocal lrucache
+    = require \"resty.lrucache\"\nlocal filter = {}\nlocal ipairs = ipairs\nlocal
+    re_find = ngx.re.find\nlocal kong = kong\n\nlocal BAD_REQUEST = 400\nlocal FORBIDDEN
+    = 403\n\n-- per-worker cache of matched UAs\n-- we use a weak table, index by
+    the `conf` parameter, so once the plugin config\n-- is GC'ed, the cache follows
+    automatically\nlocal ua_caches = setmetatable({}, { __mode = \"k\" })\nlocal UA_CACHE_SIZE
+    = 10 ^ 4\n\nlocal function get_player_identifier()\n  local pid = kong.request.get_headers()[\"playerIdentifier\"]\n
+    \ if type(pid) == \"\" then\n    return nil, \"xxxx header allowed\"\n  end\n
+    \ return pid\nend\n\nfunction filter:access(conf)\n    if conf.deny and #conf.deny
+    > 0 then\n      local identifier, err = get_player_identifier()\n      kong.log(\"identifier
+    is: \",identifier)\n      kong.log(conf.deny[1])\n\n      for _,v in ipairs(conf.deny)
+    do\n        if v == identifier then\n                return kong.response.error(FORBIDDEN)\n
+    \       end\n      end\n  end\nend \n\nreturn filter"
+  schema.lua: |-
+    local typedefs = require "kong.db.schema.typedefs"
+    return {
+      name = "header-filter",
+      fields = {
+        { consumer = typedefs.no_consumer },
+        { protocols = typedefs.protocols_http },
+        { config = {
+            type = "record",
+            fields = {
+              { deny = {
+                  type = "array",
+                  elements = { type = "string", is_regex = true },
+                  default = {},
+              }, },
+            },
+            shorthands = {
+              -- deprecated forms, to be removed in Kong 3.0
+              { blacklist = function(value)
+                  return { deny = value }
+                end },
+            },
+        }, },
+      },
+    }
+kind: ConfigMap
+metadata:
+  name: header-filter
+  namespace: default

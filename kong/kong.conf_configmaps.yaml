@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  kong.conf: "ssl_cipher_suite = custom                                  \nssl_ciphers
+    = ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4:!DH:!DHE
+    \                                                                            \nssl_protocols
+    = TLSv1.1 TLSv1.2 TLSv1.3"
+kind: ConfigMap
+metadata:
+  name: kong.conf
+  namespace: default

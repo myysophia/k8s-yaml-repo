@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-kong-admin
+  namespace: default
+spec:
+  ports:
+  - name: kong-admin
+    port: 8001
+    protocol: TCP
+    targetPort: 8001
+  selector:
+    app.kubernetes.io/component: app
+    app.kubernetes.io/instance: kong
+    app.kubernetes.io/name: kong
+  sessionAffinity: None
+  type: ClusterIP

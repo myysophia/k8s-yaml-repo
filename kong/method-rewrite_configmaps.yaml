@@ -1,0 +1,39 @@
+apiVersion: v1
+data:
+  handler.lua: "local strip = require(\"kong.tools.utils\").strip\nlocal lrucache
+    = require \"resty.lrucache\"\nlocal method = {}\nlocal kong = kong\n\n\n\nlocal
+    function get_method()\n  local p = kong.request.get_headers()[\"Action\"]\n  kong.log(\"Action
+    is :\",p)\n  if type(p) == \"\" then\n    return nil, \"xxxx header allowed\"\n
+    \ end\n  return p\nend\n\nfunction method:rewrite(conf)\n      local method, err
+    = get_method()\n      kong.log(\"method is: \",method)\n      if method == \"3\"
+    then\n      \tngx.req.set_method(ngx.HTTP_PUT)\n      elseif method == \"4\" then\n
+    \     \tngx.req.set_method(ngx.HTTP_DELETE)\n      end\nend \n\nreturn method"
+  schema.lua: |-
+    local typedefs = require "kong.db.schema.typedefs"
+    return {
+      name = "method-rewrite",
+      fields = {
+        { consumer = typedefs.no_consumer },
+        { protocols = typedefs.protocols_http },
+        { config = {
+            type = "record",
+            fields = {
+              { deny = {
+                  type = "array",
+                  elements = { type = "string", is_regex = true },
+                  default = {},
+              }, },
+            },
+            shorthands = {
+              -- deprecated forms, to be removed in Kong 3.0
+              { blacklist = function(value)
+                  return { deny = value }
+                end },
+            },
+        }, },
+      },
+    }
+kind: ConfigMap
+metadata:
+  name: method-rewrite
+  namespace: default
