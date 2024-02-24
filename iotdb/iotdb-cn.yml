@@ -1,0 +1,135 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: iotdb-cn
+  labels:
+    app: iotdb-cn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iotdb-cn
+  template:
+    metadata:
+      labels:
+        app: iotdb-cn
+    spec:
+      volumes:
+        - name: host-time
+          hostPath:
+            path: /etc/localtime
+            type: ''
+      containers:
+        - name: iotdb-cn-confignode
+          image: 'apache/iotdb:1.2.2-confignode'
+          ports:
+            - name: tcp-10710
+              containerPort: 10710
+              protocol: TCP
+            - name: tcp-10720
+              containerPort: 10720
+              protocol: TCP
+            - name: tcp-9092
+              containerPort: 9092
+              protocol: TCP
+          env:
+            - name: MY_NS_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: cn_internal_address
+              value: $(MY_POD_NAME).iotdb-cn.$(MY_NS_NAME).svc.cluster.local
+            - name: cn_target_config_node_list
+              value: 'iotdb-cn-0.iotdb-cn.$(MY_NS_NAME).svc.cluster.local:10710'
+            - name: schema_replication_factor
+              value: '1'
+            - name: cn_internal_port
+              value: '10710'
+            - name: cn_consensus_port
+              value: '10720'
+            - name: schema_region_consensus_protocol_class
+              value: org.apache.iotdb.consensus.ratis.RatisConsensus
+            - name: config_node_consensus_protocol_class
+              value: org.apache.iotdb.consensus.ratis.RatisConsensus
+            - name: data_replication_factor
+              value: '1'
+            - name: data_region_consensus_protocol_class
+              value: org.apache.iotdb.consensus.iot.IoTConsensus
+            - name: cn_metric_reporter_list
+              value: PROMETHEUS
+            - name: cn_metric_level
+              value: CORE
+            - name: cn_metric_prometheus_reporter_port
+              value: "9092"
+          resources:
+            limits:
+              cpu: '1'
+              memory: 2Gi
+            requests:
+              cpu: '1'
+              memory: 1Gi
+          volumeMounts:
+            - name: host-time
+              mountPath: /etc/localtime
+            - name: iotdb-cn-data
+              mountPath: /iotdb-cn/data/
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+  volumeClaimTemplates:
+    - metadata:
+        name: iotdb-cn-data
+      spec:
+        storageClassName: "csi-disk-topology"
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 20Gi
+  serviceName: iotdb-cn
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  revisionHistoryLimit: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: iotdb-cn
+  labels:
+    app: iotdb-cn
+spec:
+  ports:
+    - name: tcp-10710
+      protocol: TCP
+      port: 10710
+      targetPort: 10710
+    - name: tcp-10720
+      protocol: TCP
+      port: 10720
+      targetPort: 10720
+    - name: tcp-10730
+      protocol: TCP
+      port: 10730
+      targetPort: 10730
+    - name: tcp-10740
+      protocol: TCP
+      port: 10740
+      targetPort: 10740
+    - name: tcp-9092
+      port: 9092
+      protocol: TCP
+      targetPort: 9092
+  selector:
+    app: iotdb-cn
+  clusterIP: None
+  clusterIPs:
+    - None
+  type: ClusterIP
+  sessionAffinity: None

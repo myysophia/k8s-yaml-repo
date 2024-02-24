@@ -1,0 +1,129 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: iotdb-dn
+  labels:
+    app: iotdb-dn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iotdb-dn
+  template:
+    metadata:
+      labels:
+        app: iotdb-dn
+    spec:
+      volumes:
+        - name: host-time
+          hostPath:
+            path: /etc/localtime
+            type: ''
+      containers:
+        - name: iotdb-dn-datanode
+          image: 'apache/iotdb:1.2.2-datanode'
+          ports:
+            - name: tcp-10710
+              containerPort: 10710
+              protocol: TCP
+            - name: tcp-10720
+              containerPort: 10720
+              protocol: TCP
+            - name: tcp-9092
+              containerPort: 9092
+              protocol: TCP
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: MY_NS_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: dn_rpc_address
+              value: $(MY_POD_NAME).iotdb.$(MY_NS_NAME).svc.cluster.local
+            - name: dn_internal_address
+              value: $(MY_POD_NAME).iotdb.$(MY_NS_NAME).svc.cluster.local
+            - name: dn_target_config_node_list
+              value: 'iotdb-0.iotdb.$(MY_NS_NAME).svc.cluster.local:10710'
+            - name: data_replication_factor
+              value: '1'
+            - name: dn_rpc_port
+              value: '6667'
+            - name: dn_mpp_data_exchange_port
+              value: '10740'
+            - name: dn_schema_region_consensus_port
+              value: '10750'
+            - name: dn_data_region_consensus_port
+              value: '10760'
+            - name: data_region_consensus_protocol_class
+              value: org.apache.iotdb.consensus.iot.IoTConsensus
+            - name: schema_replication_factor
+              value: '1'
+            - name: config_node_consensus_protocol_class
+              value: org.apache.iotdb.consensus.ratis.RatisConsensus
+            - name: enable_auto_create_schema
+              value: "true"
+            - name: dn_metric_reporter_list
+              value: PROMETHEUS
+            - name: dn_metric_level
+              value: CORE
+            - name: dn_metric_prometheus_reporter_port
+              value: "9091"
+          resources:
+            limits:
+              cpu: '1'
+              memory: 2Gi
+            requests:
+              cpu: '1'
+              memory: 1Gi
+          volumeMounts:
+            - name: host-time
+              mountPath: /etc/localtime
+            - name: iotdb-dn-data
+              mountPath: /iotdb-dn/data/
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+  volumeClaimTemplates:
+    - metadata:
+        name: iotdb-dn-data
+      spec:
+        storageClassName: "csi-disk-topology"
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 20Gi
+  serviceName: iotdb-dn
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  revisionHistoryLimit: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: iotdb-dn
+  labels:
+    app: iotdb-dn
+spec:
+  ports:
+    - name: tcp-6667
+      protocol: TCP
+      port: 6667
+      targetPort: 6667
+    - name: tcp-9091
+      port: 9091
+      protocol: TCP
+      targetPort: 9091
+  selector:
+    app: iotdb-dn
+  clusterIP: None
+  clusterIPs:
+    - None
+  type: ClusterIP
+  sessionAffinity: None
