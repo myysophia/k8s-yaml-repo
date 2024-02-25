@@ -20,7 +20,7 @@ spec:
             path: /etc/localtime
             type: ''
       containers:
-        - name: iotdb-dn-datanode
+        - name: iotdb-dn
           image: 'apache/iotdb:1.2.2-datanode'
           ports:
             - name: tcp-10710
@@ -44,11 +44,11 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.namespace
             - name: dn_rpc_address
-              value: $(MY_POD_NAME).iotdb.$(MY_NS_NAME).svc.cluster.local
+              value: $(MY_POD_NAME).iotdb-dn.$(MY_NS_NAME).svc.cluster.local
             - name: dn_internal_address
-              value: $(MY_POD_NAME).iotdb.$(MY_NS_NAME).svc.cluster.local
+              value: $(MY_POD_NAME).iotdb-dn.$(MY_NS_NAME).svc.cluster.local
             - name: dn_target_config_node_list
-              value: 'iotdb-0.iotdb.$(MY_NS_NAME).svc.cluster.local:10710'
+              value: 'iotdb-cn-0.iotdb-cn.$(MY_NS_NAME).svc.cluster.local:10710'
             - name: data_replication_factor
               value: '1'
             - name: dn_rpc_port
