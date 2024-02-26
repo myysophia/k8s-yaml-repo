@@ -1,5 +1,4 @@
 replicaCount: 1 
-
 image:
   repository: apache/iotdb
   tag: 1.2.2-confignode
