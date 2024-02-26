@@ -19,6 +19,20 @@ spec:
           hostPath:
             path: /etc/localtime
       containers:
+      #  tcp 健康检查 livenessprobe
+      livenessProbe:
+        tcpSocket:
+          port: 6667
+        initialDelaySeconds: 15
+        periodSeconds: 5
+        failureThreshold: 3
+      #  tcp 健康检查 readinessprobe
+      readinessProbe:
+        tcpSocket:
+          port: 6667
+        initialDelaySeconds: 30
+        periodSeconds: 5
+        failureThreshold: 3
       - name: iotdb-confignode
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
