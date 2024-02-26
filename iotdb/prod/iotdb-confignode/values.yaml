@@ -43,9 +43,9 @@ storage:
 
 env:
   - name: schema_replication_factor
-    value: "1"
+    value: "3"
   - name: data_replication_factor
-    value: "1"   
+    value: "3"   
   - name: cn_internal_port
     value: "10710"
   - name: cn_consensus_port
