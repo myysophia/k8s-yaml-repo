@@ -40,7 +40,7 @@ resources:
 storage:
   name: iotdb-confignode-data
   size: 50Gi
-  storageClassName: "csi-disk-topology"
+  storageClassName: "alicloud-disk-topology-alltype"
 
 env:
   - name: schema_replication_factor
