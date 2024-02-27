@@ -52,7 +52,7 @@ env:
   - name: data_replication_factor
     value: '3'
   - name: schema_replication_factor
-    value: '3'    
+    value: '2'    
   - name: dn_rpc_port
     value: '6667'
   - name: dn_mpp_data_exchange_port
@@ -61,10 +61,12 @@ env:
     value: '10750'
   - name: dn_data_region_consensus_port
     value: '10760'
-  - name: data_region_consensus_protocol_class
-    value: org.apache.iotdb.consensus.iot.IoTConsensus
+  - name: schema_region_consensus_protocol_class
+    value: "org.apache.iotdb.consensus.ratis.RatisConsensus"
   - name: config_node_consensus_protocol_class
-    value: org.apache.iotdb.consensus.ratis.RatisConsensus
+    value: "org.apache.iotdb.consensus.ratis.RatisConsensus"
+  - name: data_region_consensus_protocol_class
+    value: "org.apache.iotdb.consensus.iot.IoTConsensus"
   - name: enable_auto_create_schema
     value: "true"
   - name: dn_metric_reporter_list

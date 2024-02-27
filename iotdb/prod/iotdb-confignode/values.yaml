@@ -1,4 +1,4 @@
-replicaCount: 3 
+replicaCount: 1 
 image:
   repository: apache/iotdb
   tag: 1.1.2-confignode
@@ -45,7 +45,7 @@ env:
   - name: schema_replication_factor
     value: "3"
   - name: data_replication_factor
-    value: "3"   
+    value: "2"   
   - name: cn_internal_port
     value: "10710"
   - name: cn_consensus_port
