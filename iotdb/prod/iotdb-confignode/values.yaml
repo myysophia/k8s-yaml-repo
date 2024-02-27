@@ -1,7 +1,7 @@
 replicaCount: 3 
 image:
   repository: apache/iotdb
-  tag: 1.2.2-confignode
+  tag: 1.1.2-confignode
   pullPolicy: IfNotPresent
 
 service:
