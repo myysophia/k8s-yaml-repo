@@ -6,12 +6,18 @@ metadata:
     {{- include "iotdb-chart.labels" . | nindent 4 }}
 spec:
   ports:
-  {{- range .Values.service.ports }}
-    - name: {{ .name }}
-      port: {{ .port }}
-      targetPort: {{ .targetPort }}
-      protocol: TCP
-  {{- end }}
+  - name: tcp-6667
+    port: 6667
+    protocol: TCP
+    targetPort: 6667
+  - name: tcp-9091
+    port: 9091
+    protocol: TCP
+    targetPort: 9091
+  - name: tcp-9092
+    port: 9092
+    protocol: TCP
+    targetPort: 9092
   selector:
     {{- include "iotdb-chart.selectorLabels" . | nindent 4 }}
   type: LoadBalancer
