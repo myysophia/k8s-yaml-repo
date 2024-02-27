@@ -4,19 +4,15 @@ metadata:
   name: {{ include "iotdb-chart.fullname" . }}-external
   annotations:
     service.beta.kubernetes.io/alibaba-cloud-loadbalancer-id: lb-bp1siulzeqxfx1hm45zru 
-    service.beta.kubernetes.io/alicloud-loadbalancer-force-override-listeners: "true"  
+    service.beta.kubernetes.io/alicloud-loadbalancer-force-override-listeners: "true"    
   labels:
     {{- include "iotdb-chart.labels" . | nindent 4 }}
 spec:
   ports:
-  - name: tcp-6667
-    port: 6667
+  - name: tcp-9092
+    port: 9092
     protocol: TCP
-    targetPort: 6667
-  - name: tcp-9091
-    port: 9091
-    protocol: TCP
-    targetPort: 9091
+    targetPort: 9092
   selector:
     {{- include "iotdb-chart.selectorLabels" . | nindent 4 }}
   type: LoadBalancer
