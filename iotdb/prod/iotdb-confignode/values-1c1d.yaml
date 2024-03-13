@@ -1,6 +1,7 @@
 replicaCount: 1 
+
 image:
-  repository: apache/iotdb
+  repository: novastar-registry.cn-hangzhou.cr.aliyuncs.com/novacloud/apache/iotdb
   tag: 1.1.2-confignode
   pullPolicy: IfNotPresent
 
@@ -43,9 +44,9 @@ storage:
 
 env:
   - name: schema_replication_factor
-    value: "3"
+    value: "1"
   - name: data_replication_factor
-    value: "2"   
+    value: "1"   
   - name: cn_internal_port
     value: "10710"
   - name: cn_consensus_port
@@ -65,3 +66,11 @@ env:
 
 nameOverride: ""
 fullnameOverride: "iotdb-confignode"
+
+podAntiAffinity:
+  enabled: false
+  key: app.kubernetes.io/name
+  operator: In
+  values:
+    - iotdb-confignode
+  topologyKey: "kubernetes.io/hostname"

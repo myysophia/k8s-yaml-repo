@@ -14,6 +14,20 @@ spec:
       labels:
         {{- include "iotdb-chart.selectorLabels" . | nindent 8 }}
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          {{- if .Values.podAntiAffinity.enabled }}
+          - labelSelector:
+              matchExpressions:
+              - key: {{ .Values.podAntiAffinity.key }}
+                operator: {{ .Values.podAntiAffinity.operator }}
+                values:
+                {{- range .Values.podAntiAffinity.values }}
+                - {{ . }}
+                {{- end }}
+            topologyKey: {{ .Values.podAntiAffinity.topologyKey }}
+          {{- end }}      
       volumes:
         - name: host-time
           hostPath:

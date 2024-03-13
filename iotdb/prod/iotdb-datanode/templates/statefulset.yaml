@@ -14,10 +14,30 @@ spec:
       labels:
         {{- include "iotdb-chart.selectorLabels" . | nindent 8 }}
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          {{- if .Values.podAntiAffinity.enabled }}
+          - labelSelector:
+              matchExpressions:
+              - key: {{ .Values.podAntiAffinity.key }}
+                operator: {{ .Values.podAntiAffinity.operator }}
+                values:
+                {{- range .Values.podAntiAffinity.values }}
+                - {{ . }}
+                {{- end }}
+            topologyKey: {{ .Values.podAntiAffinity.topologyKey }}
+          {{- end }}     
       volumes:
         - name: host-time
           hostPath:
             path: /etc/localtime
+        - name: iotdb-datanode-env
+          configMap:
+            name: iotdb-datanode-env
+            items:
+              - key: datanode-env.sh
+                path: datanode-env.sh            
       containers:
       #  tcp 健康检查 livenessprobe
       # livenessProbe:
@@ -77,6 +97,9 @@ spec:
             mountPath: /etc/localtime
           - name: {{ .Values.storage.name }}
             mountPath: /iotdb/data/
+          - name: iotdb-datanode-env
+            mountPath: /iotdb/conf/datanode-env.sh
+            subPath: datanode-env.sh            
   serviceName: {{ include "iotdb-chart.fullname" . }}                             
   volumeClaimTemplates:
   - metadata:

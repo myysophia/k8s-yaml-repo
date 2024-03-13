@@ -1,6 +1,7 @@
 replicaCount: 1 
+
 image:
-  repository: apache/iotdb
+  repository: novastar-registry.cn-hangzhou.cr.aliyuncs.com/novacloud/apache/iotdb
   tag: 1.1.2-confignode
   pullPolicy: IfNotPresent
 
@@ -65,3 +66,11 @@ env:
 
 nameOverride: ""
 fullnameOverride: "iotdb-confignode"
+
+podAntiAffinity:
+  enabled: false
+  key: app.kubernetes.io/name
+  operator: In
+  values:
+    - iotdb-confignode
+  topologyKey: "kubernetes.io/hostname"
