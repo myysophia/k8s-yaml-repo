@@ -1,7 +1,7 @@
 replicaCount: 3
 
 image:
-  repository: apache/iotdb
+  repository: novastar-registry.cn-hangzhou.cr.aliyuncs.com/novacloud/apache/iotdb
   tag: 1.1.2-datanode
   pullPolicy: IfNotPresent
 
@@ -35,15 +35,15 @@ service:
 
 resources:
   limits:
-    cpu: "2"
-    memory: 4Gi
+    cpu: "1"
+    memory: "2048Mi"
   requests:
     cpu: "1"
-    memory: 1Gi
+    memory: "1024Mi"
 
 storage:
   name: iotdb-datanode-data
-  size: 100Gi
+  size: 50Gi
   storageClassName: "alicloud-disk-topology-alltype"
 
 env:
@@ -52,7 +52,7 @@ env:
   - name: data_replication_factor
     value: '3'
   - name: schema_replication_factor
-    value: '2'    
+    value: '3'    
   - name: dn_rpc_port
     value: '6667'
   - name: dn_mpp_data_exchange_port
@@ -66,7 +66,7 @@ env:
   - name: config_node_consensus_protocol_class
     value: "org.apache.iotdb.consensus.ratis.RatisConsensus"
   - name: data_region_consensus_protocol_class
-    value: "org.apache.iotdb.consensus.iot.IoTConsensus"
+    value: "org.apache.iotdb.consensus.iot.RatisConsensus"
   - name: enable_auto_create_schema
     value: "true"
   - name: dn_metric_reporter_list
@@ -78,3 +78,11 @@ env:
 
 nameOverride: ""
 fullnameOverride: "iotdb-datanode"
+
+podAntiAffinity:
+  enabled: true
+  key: app.kubernetes.io/name
+  operator: In
+  values:
+    - iotdb-datanode
+  topologyKey: "kubernetes.io/hostname"

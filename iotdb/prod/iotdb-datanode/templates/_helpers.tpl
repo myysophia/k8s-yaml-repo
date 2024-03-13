@@ -93,3 +93,21 @@ Create iotdb-chart.selectorLabels.
 app.kubernetes.io/name: {{ include "iotdb-chart.fullname" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
+
+
+{{/* Define helper template to calculate JVM MAX_HEAP_SIZE from memory limit */}}
+{{- define "chart.maxHeapSize" -}}
+  {{- $memoryMiStr := regexReplaceAllLiteral "Mi" .Values.resources.limits.memory "" -}}
+  {{- $memoryMiInt := atoi $memoryMiStr -}}
+  {{- $maxHeapSize := div (mul $memoryMiInt 75) 100 -}}
+  {{- printf "%dM" $maxHeapSize -}}
+{{- end -}}
+
+
+{{/* Define helper template to calculate JVM MAX_DIRECT_MEMORY_SIZE from memory limit */}}
+{{- define "chart.maxdirmem" -}}
+  {{- $memoryMiStr := regexReplaceAllLiteral "Mi" .Values.resources.limits.memory "" -}}
+  {{- $memoryMiInt := atoi $memoryMiStr -}}
+  {{- $maxdirmem := div (mul $memoryMiInt 25) 100 -}}
+  {{- printf "%dM" $maxdirmem -}}
+{{- end -}}
