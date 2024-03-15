@@ -1,7 +1,7 @@
 replicaCount: 1 
 
 image:
-  repository: novastar-registry.cn-hangzhou.cr.aliyuncs.com/novacloud/apache/iotdb
+  repository: apache/iotdb
   tag: 1.1.2-confignode
   pullPolicy: IfNotPresent
 
@@ -32,10 +32,10 @@ service:
 resources:
   limits:
     cpu: "1"
-    memory: 2Gi
+    memory: 2048Mi
   requests:
     cpu: "1"
-    memory: 1Gi
+    memory: 1024Mi
 
 storage:
   name: iotdb-confignode-data
