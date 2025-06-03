@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-backend
+  name: bisheng-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bisheng-backend
+  template:
+    metadata:
+      labels:
+        app: bisheng-backend
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+    spec:
+      containers:
+        - name: container-9tnx7d
+          imagePullPolicy: IfNotPresent
+          image: 'cr.dataelem.com/dataelement/bisheng-backend:latest'
+          ports:
+            - name: http-0
+              protocol: TCP
+              containerPort: 7860
+              servicePort: 7860
+          command:
+            - bash
+          args:
+            - '-c'
+            - >-
+              uvicorn bisheng.main:app --host 0.0.0.0 --port 7860 --no-access-log
+              --workers 2
+          volumeMounts:
+            - readOnly: false
+              mountPath: /app/data
+              name: bisheng-backend
+            - name: volume-roavut
+              readOnly: true
+              mountPath: /app/bisheng/config.yaml
+              subPath: config.yaml
+      serviceAccount: default
+      initContainers: []
+      volumes:
+        - name: volume-roavut
+          configMap:
+            name: bisheng-backend-cnf
+            items:
+              - key: config.yaml
+                path: config.yaml
+      imagePullSecrets: null
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: bisheng-backend-mx3x
+  volumeClaimTemplates:
+    - spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: external-default-sc
+      metadata:
+        name: bisheng-backend
+        namespace: bisheng-zxp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-backend
+  name: bisheng-backend-mx3x
+  annotations:
+    kubesphere.io/alias-name: bisheng-backend
+    kubesphere.io/serviceType: statefulservice
+spec:
+  sessionAffinity: None
+  selector:
+    app: bisheng-backend
+  ports:
+    - name: http-0
+      protocol: TCP
+      port: 7860
+      targetPort: 7860
+  clusterIP: None
+
+

@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: milvus-standalone
+  name: milvus-standalone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: milvus-standalone
+  template:
+    metadata:
+      labels:
+        app: milvus-standalone
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+    spec:
+      containers:
+        - name: container-allzfa
+          imagePullPolicy: IfNotPresent
+          image: 'cr.dataelem.com/milvusdb/milvus:v2.3.3'
+          env:
+            - name: ETCD_ENDPOINTS
+              value: 'milvus-etcd-01io.bisheng-zxp:2379'
+            - name: MINIO_ADDRESS
+              value: 'milvus-minio-uq6k.bisheng-zxp:9000'
+          volumeMounts:
+            - name: host-time
+              mountPath: /etc/localtime
+              readOnly: false
+            - readOnly: false
+              mountPath: /var/lib/milvus
+              name: milvus-standalone
+          ports:
+            - name: http-0
+              protocol: TCP
+              containerPort: 19530
+              servicePort: 19530
+            - name: http-1
+              protocol: TCP
+              containerPort: 9091
+              servicePort: 9091
+          command:
+            - milvus
+          args:
+            - 'run'
+            - 'standalone'
+      serviceAccount: default
+      initContainers: []
+      volumes:
+        - hostPath:
+            path: /etc/localtime
+            type: ''
+          name: host-time
+      imagePullSecrets: null
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: milvus-standalone-rhtl
+  volumeClaimTemplates:
+    - spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: external-default-sc
+      metadata:
+        name: milvus-standalone
+        namespace: bisheng-zxp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: milvus-standalone
+  name: milvus-standalone-rhtl
+  annotations:
+    kubesphere.io/alias-name: milvus-standalone
+    kubesphere.io/serviceType: statefulservice
+spec:
+  sessionAffinity: None
+  selector:
+    app: milvus-standalone
+  ports:
+    - name: http-0
+      protocol: TCP
+      port: 19530
+      targetPort: 19530
+    - name: http-1
+      protocol: TCP
+      port: 9091
+      targetPort: 9091
+  clusterIP: None
+
+

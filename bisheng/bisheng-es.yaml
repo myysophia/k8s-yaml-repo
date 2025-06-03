@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-es
+  name: bisheng-es
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bisheng-es
+  template:
+    metadata:
+      labels:
+        app: bisheng-es
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+    spec:
+      containers:
+        - name: container-4wrrhk
+          imagePullPolicy: IfNotPresent
+          image: 'cr.dataelem.com/bitnami/elasticsearch:8.12.0'
+          ports:
+            - name: http-9200
+              protocol: TCP
+              containerPort: 9200
+              servicePort: 9200
+            - name: http-9300
+              protocol: TCP
+              containerPort: 9300
+              servicePort: 9300
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          volumeMounts:
+            - readOnly: false
+              mountPath: /bitnami/elasticsearch/data
+              name: bisheng-es
+      serviceAccount: default
+      initContainers: []
+      volumes: []
+      imagePullSecrets: null
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: bisheng-es-ijpq
+  volumeClaimTemplates:
+    - spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: external-default-sc
+      metadata:
+        name: bisheng-es
+        namespace: bisheng-zxp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-es
+  name: bisheng-es-ijpq
+  annotations:
+    kubesphere.io/alias-name: bisheng-es
+    kubesphere.io/serviceType: statefulservice
+spec:
+  sessionAffinity: None
+  selector:
+    app: bisheng-es
+  ports:
+    - name: http-9200
+      protocol: TCP
+      port: 9200
+      targetPort: 9200
+    - name: http-9300
+      protocol: TCP
+      port: 9300
+      targetPort: 9300
+  clusterIP: None
+
+

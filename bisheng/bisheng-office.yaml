@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-office
+  name: bisheng-office
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bisheng-office
+  template:
+    metadata:
+      labels:
+        app: bisheng-office
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+    spec:
+      containers:
+        - name: container-2rsreg
+          imagePullPolicy: IfNotPresent
+          image: 'cr.dataelem.com/onlyoffice/documentserver:7.2.1'
+          ports:
+            - name: http-80
+              protocol: TCP
+              containerPort: 80
+              servicePort: 8701
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+            - name: JWT_ENABLED
+              value: 'false'
+          volumeMounts:
+            - readOnly: false
+              mountPath: /var/www/onlyoffice/documentserver/sdkjs-plugins/bisheng
+              name: bisheng-office
+      serviceAccount: default
+      initContainers: []
+      volumes: []
+      imagePullSecrets: null
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: bisheng-office-cf1h
+  volumeClaimTemplates:
+    - spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: external-default-sc
+      metadata:
+        name: bisheng-office
+        namespace: bisheng-zxp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-office
+  name: bisheng-office-cf1h
+  annotations:
+    kubesphere.io/alias-name: bisheng-office
+    kubesphere.io/serviceType: statefulservice
+spec:
+  sessionAffinity: None
+  selector:
+    app: bisheng-office
+  ports:
+    - name: http-80
+      protocol: TCP
+      port: 8701
+      targetPort: 80
+  clusterIP: None
+
+

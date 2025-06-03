@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-frontend
+  name: bisheng-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bisheng-frontend
+  template:
+    metadata:
+      labels:
+        app: bisheng-frontend
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+    spec:
+      containers:
+        - name: container-6iebk7
+          imagePullPolicy: IfNotPresent
+          image: 'icr.dataelem.com/dataelement/bisheng-frontend:latest'
+          ports:
+            - name: port-3001
+              protocol: TCP
+              containerPort: 3001
+              servicePort: 3001
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          volumeMounts:
+            - name: volume-oxx35k
+              readOnly: true
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: volume-trlzgf
+              readOnly: true
+              mountPath: /etc/nginx/conf.d
+      serviceAccount: default
+      initContainers: []
+      volumes:
+        - name: volume-oxx35k
+          configMap:
+            name: bisheng-nginx
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+        - name: volume-trlzgf
+          configMap:
+            name: bisheng-nginx
+            items:
+              - key: default.conf
+                path: default.conf
+              - key: websocket.conf
+                path: websocket.conf
+      imagePullSecrets: null
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: bisheng-frontend-rzhg
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-frontend
+  name: bisheng-frontend-rzhg
+  annotations:
+    kubesphere.io/alias-name: bisheng-frontend
+    kubesphere.io/serviceType: statefulservice
+spec:
+  sessionAffinity: None
+  selector:
+    app: bisheng-frontend
+  ports:
+    - name: port-3001
+      protocol: TCP
+      port: 3001
+      targetPort: 3001
+  clusterIP: None
+
+

@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: milvus-minio
+  name: milvus-minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: milvus-minio
+  template:
+    metadata:
+      labels:
+        app: milvus-minio
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+    spec:
+      containers:
+        - name: container-e8f3zy
+          imagePullPolicy: IfNotPresent
+          image: 'cr.dataelem.com/minio/minio:RELEASE.2023-03-20T20-16-18Z'
+          ports:
+            - name: http-0
+              protocol: TCP
+              containerPort: 9000
+              servicePort: 9000
+            - name: http-1
+              protocol: TCP
+              containerPort: 9001
+              servicePort: 9001
+          env:
+            - name: MINIO_ACCESS_KEY
+              value: minioadmin
+            - name: MINIO_SECRET_KEY
+              value: minioadmin
+          volumeMounts:
+            - name: host-time
+              mountPath: /etc/localtime
+              readOnly: false
+            - readOnly: false
+              mountPath: /minio_data
+              name: milvus-minio
+          command:
+            - minio
+          args:
+            - 'server'
+            - '/minio_data'
+      serviceAccount: default
+      initContainers: []
+      volumes:
+        - hostPath:
+            path: /etc/localtime
+            type: ''
+          name: host-time
+      imagePullSecrets: null
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: milvus-minio-uq6k
+  volumeClaimTemplates:
+    - spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: external-default-sc
+      metadata:
+        name: milvus-minio
+        namespace: bisheng-zxp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: milvus-minio
+  name: milvus-minio-uq6k
+  annotations:
+    kubesphere.io/alias-name: milvus-minio
+    kubesphere.io/serviceType: statefulservice
+spec:
+  sessionAffinity: None
+  selector:
+    app: milvus-minio
+  ports:
+    - name: http-0
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+    - name: http-1
+      protocol: TCP
+      port: 9001
+      targetPort: 9001
+  clusterIP: None
+
+

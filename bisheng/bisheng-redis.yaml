@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-redis
+  name: bisheng-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bisheng-redis
+  template:
+    metadata:
+      labels:
+        app: bisheng-redis
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+    spec:
+      containers:
+        - name: container-v3tttu
+          imagePullPolicy: IfNotPresent
+          image: 'cr.dataelem.com/redis:7.0.4'
+          ports:
+            - name: http-6379
+              protocol: TCP
+              containerPort: 6379
+              servicePort: 6379
+          command:
+            - redis-server
+          args:
+            - /etc/redis.conf
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          volumeMounts:
+            - readOnly: false
+              mountPath: /data
+              name: bisheng-redis
+            - name: volume-7elktd
+              readOnly: true
+              mountPath: /etc/redis.conf
+              subPath: redis.conf
+      serviceAccount: default
+      initContainers: []
+      volumes:
+        - name: volume-7elktd
+          configMap:
+            name: bisheng-redis-cnf
+            items:
+              - key: redis.conf
+                path: redis.conf
+      imagePullSecrets: null
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: bisheng-redis-gx43
+  volumeClaimTemplates:
+    - spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi #要修改的地方
+        storageClassName: external-default-sc 
+      metadata:
+        name: bisheng-redis
+        namespace: bisheng-zxp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-redis
+  name: bisheng-redis-gx43
+  annotations:
+    kubesphere.io/alias-name: bisheng-redis
+    kubesphere.io/serviceType: statefulservice
+spec:
+  sessionAffinity: None
+  selector:
+    app: bisheng-redis
+  ports:
+    - name: http-6379
+      protocol: TCP
+      port: 6379
+      targetPort: 6379
+  clusterIP: None
+
+

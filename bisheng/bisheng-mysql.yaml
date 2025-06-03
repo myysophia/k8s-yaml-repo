@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-mysql
+  name: bisheng-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bisheng-mysql
+  template:
+    metadata:
+      labels:
+        app: bisheng-mysql
+      annotations:
+        logging.kubesphere.io/logsidecar-config: '{}'
+    spec:
+      containers:
+        - name: container-4g37k3
+          imagePullPolicy: IfNotPresent
+          image: 'cr.dataelem.com/mysql:8.0'
+          ports:
+            - name: http-3306
+              protocol: TCP
+              containerPort: 3306
+              servicePort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: '1234'
+            - name: MYSQL_DATABASE
+              value: bisheng
+            - name: TZ
+              value: Asia/Shanghai
+          volumeMounts:
+            - readOnly: false
+              mountPath: /var/lib/mysql
+              name: bisheng-mysql
+            - name: volume-ccdmi9
+              readOnly: true
+              mountPath: /etc/mysql/my.cnf
+              subPath: my.cnf
+      serviceAccount: default
+      initContainers: []
+      volumes:
+        - name: volume-ccdmi9
+          configMap:
+            name: bisheng-mysql-cnf
+            items:
+              - key: my.cnf
+                path: my.cnf
+      imagePullSecrets: null
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  serviceName: bisheng-mysql-6kgj
+  volumeClaimTemplates:
+    - spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi #根据实际情况填写
+        storageClassName: external-default-sc #根据实际情况选择存储类
+      metadata:
+        name: bisheng-mysql
+        namespace: bisheng-zxp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: bisheng-zxp
+  labels:
+    app: bisheng-mysql
+  name: bisheng-mysql-6kgj
+  annotations:
+    kubesphere.io/alias-name: bisheng-mysql
+    kubesphere.io/serviceType: statefulservice
+spec:
+  sessionAffinity: None
+  selector:
+    app: bisheng-mysql
+  ports:
+    - name: http-3306
+      protocol: TCP
+      port: 3306
+      targetPort: 3306
+  clusterIP: None
+
+

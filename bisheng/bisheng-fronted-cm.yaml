@@ -1,0 +1,46 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: bisheng-nginx
+  namespace: bisheng-zxp
+  annotations:
+    kubesphere.io/creator: admin
+data:
+  default.conf: "\n# 在http区域内一定要添加下面配置, 支持websocket\nmap $http_upgrade $connection_upgrade {\n\tdefault upgrade;\n\t'' close;\n}\n\n\n\nserver {\n\tgzip on;\n\tgzip_comp_level  2;\n\tgzip_min_length  1000;\n\tgzip_types  text/xml text/css;\n\tgzip_http_version 1.1;\n\tgzip_vary  on;\n\tgzip_disable \"MSIE [4-6] \\.\";\n\n\tlisten 3001;\n\n\tlocation / {\n\t\troot /usr/share/nginx/html;\n\t\tindex index.html index.htm;\n\t\ttry_files $uri $uri/ /index.html =404;\n\t\tadd_header X-Frame-Options SAMEORIGIN;\n\t}\n\n\tlocation /api {\n\t\tproxy_pass http://bisheng-backend-mx3x.bisheng-zxp:7860;\n\t\tproxy_read_timeout 300s;\n\t\tproxy_set_header Host $host;\n\t\tproxy_set_header X-Real-IP $remote_addr;\n\t\tproxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\t\tproxy_http_version 1.1;\n\t\tproxy_set_header Upgrade $http_upgrade;\n\t\tproxy_set_header Connection $connection_upgrade;\n\t\tclient_max_body_size 50m;\n\t\tadd_header Access-Control-Allow-Origin $host;\n\t\tadd_header X-Frame-Options SAMEORIGIN;\n\t}\n\n\tlocation /bisheng {\n\t\tproxy_pass http://milvus-minio-uq6k.bisheng-zxp:9000;\n\t}\n}"
+  nginx.conf: |-
+
+    user  nginx;
+    worker_processes  auto;
+
+    error_log  /var/log/nginx/error.log notice;
+    pid        /var/run/nginx.pid;
+
+
+    events {
+        worker_connections  1024;
+    }
+
+
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log  /var/log/nginx/access.log  main;
+
+        sendfile        on;
+        #tcp_nopush     on;
+
+        keepalive_timeout  65;
+
+        #gzip  on;
+
+        include /etc/nginx/conf.d/*.conf;
+    }
+  websocket.conf: "\n# 在http区域内一定要添加下面配置, 支持websocket\nmap $http_upgrade $connection_upgrade {\n\tdefault upgrade;\n\t'' close;\n}\n\nserver {\n\tgzip on;\n\tgzip_comp_level  2;\n\tgzip_min_length  1000;\n\tgzip_types  text/xml text/css;\n\tgzip_http_version 1.1;\n\tgzip_vary  on;\n\tgzip_disable \"MSIE [4-6] \\.\";\n\n\tlisten 8443;\n\tlocation /api {\n\t\tproxy_pass http://bisheng-backend-mx3x.bisheng-zxp:7860;\n\t\tproxy_read_timeout 300s;\n\t\tproxy_set_header Host $host;\n\t\tproxy_set_header X-Real-IP $remote_addr;\n\t\tproxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\t\tproxy_http_version 1.1;\n\t\tproxy_set_header Upgrade $http_upgrade;\n\t\tproxy_set_header Connection $connection_upgrade;\n\t\tclient_max_body_size 50m;\n\t}\n}"
+
+
+
